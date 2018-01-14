@@ -1,104 +1,87 @@
 import java.util.Scanner;
-//example http://www.meta-calculator.com/learning-lab/rpn-reverse-polish-notation-explained.php
+
 public class ReversePolishNotationCalculator {
 
-    static class StackNode {
+    private static class StackNode {
+        private StackNode underneath;
+        private double data;
+
         public StackNode(double data, StackNode underneath) {
             this.data = data;
             this.underneath = underneath;
         }
-
-        public StackNode underneath;
-        public double data;
     }
 
+    private static class RevPolishNotation {
+        private String command;
+        private StackNode top;
 
-    static class RPN {
-        public void into(double new_data) {
-            StackNode new_node = new StackNode(new_data, top);
-            top = new_node;
+        public RevPolishNotation(String command) {
+            top = null;
+            this.command = command;
         }
 
-        public double outof( ) {
+        public void updateValue(double new_data) {
+            top = new StackNode(new_data, top);
+        }
+
+        public double extractValue( ) {
             double top_data = top.data;
             top = top.underneath;
             return top_data;
         }
 
-        public RPN(String command) {
-            top = null;
-            this.command = command;
-        }
+        public double calculateValue( ) {
+            for(int charIndex = 0; charIndex < command.length( ); charIndex++) {
+                char charInPosition = command.charAt(charIndex);
 
-        public double get( ) {
-            double a, b;
-            int j;
-
-            for(int i = 0; i < command.length( ); i++) {
-// if it's a digit
-                if(Character.isDigit(command.charAt(i))) {
-                    double number;
-
-// get a string of the number
-                    String temp = "";
-                    for(j = 0; (j < 100) && (Character.isDigit(command.charAt(i)) || (command.charAt(i) == '.')); j++, i++) {
-                        temp = temp + String.valueOf(command.charAt(i));
+                if (Character.isDigit(charInPosition)) {
+                    String numberFromText = "";
+                    for (int numberLength = 0; (numberLength < 100) && (Character.isDigit(command.charAt(charIndex)) || (command.charAt(charIndex) == '.')); numberLength++, charIndex++) {
+                        numberFromText = numberFromText + String.valueOf(command.charAt(charIndex));
                     }
+                    updateValue(Double.parseDouble(numberFromText));
 
-// convert to double and add to the stack
-                    number = Double.parseDouble(temp);
-                    into(number);
-                } else if(command.charAt(i) == '+') {
-                    b = outof( );
-                    a = outof( );
-                    into(a + b);
-                } else if(command.charAt(i) == '-') {
-                    b = outof( );
-                    a = outof( );
-                    into(a - b);
-                } else if(command.charAt(i) == '*') {
-                    b = outof( );
-                    a = outof( );
-                    into(a * b);
-                } else if(command.charAt(i) == '/') {
-                    b = outof( );
-                    a = outof( );
-                    into(a / b);
-                }
-                else if(command.charAt(i) == '^') {
-                    b = outof( );
-                    a = outof( );
-                    into(Math.pow(a, b));
-                } else if(command.charAt(i) != ' ') {
-                    throw new IllegalArgumentException( );
+                } else if("+-*/^".contains(String.valueOf(charInPosition))) {
+                    addValue (charInPosition);
+
+                } else if(charInPosition != ' ') {
+                    throw new IllegalArgumentException();
                 }
             }
-
-            double val = outof( );
-
-            if(top != null) {
-                throw new IllegalArgumentException( );
-            }
-
-            return val;
+            double calculatedValue = extractValue();
+            if(!isNotMoreNumbers()) throw new IllegalArgumentException();
+            return calculatedValue;
         }
 
-        private String command;
-        private StackNode top;
+        private boolean isNotMoreNumbers(){
+            return top == null;
+        }
 
-        /* main method */
+        private void addValue(char charInPosition){
+            double numberSecond = extractValue();
+            double numberFirst = extractValue();
+
+            if(charInPosition == '+') updateValue(numberFirst + numberSecond);
+            if(charInPosition == '-') updateValue(numberFirst - numberSecond);
+            if(charInPosition == '*') updateValue(numberFirst * numberSecond);
+            if(charInPosition == '/') updateValue(numberFirst / numberSecond);
+            if(charInPosition == '^') updateValue(Math.pow(numberFirst, numberSecond));
+        }
+
         public static void main(String args[]) {
             while(true) {
-                Scanner in = new Scanner(System.in);
                 System.out.println("Enter RPN expression or \"quit\".");
-                String line = in.nextLine( );
-                if(line.equals("quit")) {
-                    break;
-                } else {
-                    RPN calc = new RPN(line);
-                    System.out.printf("Answer is %f\n", calc.get( ));
-                }
+                String RpnExpresion = new Scanner(System.in).nextLine();
+                if (!calculate(RpnExpresion)) break;
             }
+        }
+
+        private static boolean calculate(String RpnExpresion){
+            if(RpnExpresion.equalsIgnoreCase("quit")) return false;
+
+            System.out.printf("Answer is %f\n", new RevPolishNotation(RpnExpresion).calculateValue());
+            return true;
         }
     }
 }
